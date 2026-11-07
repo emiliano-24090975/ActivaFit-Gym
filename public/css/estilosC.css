@@ -1,0 +1,67 @@
+body{
+    background-color: lightgrey;
+}
+
+.cabezera{
+    display: grid;
+    grid-template-areas: 
+    "enlace" "titulo";
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    padding-top: 10px;
+}
+
+.botonRegresar{
+  padding: 10px 20px;
+  background-color: white;
+  color: #1E3A8A;
+  border: #959188;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.botonRegresar:hover {
+  background-color: #0056b3;
+}
+
+#zona{
+    padding: 5px 10px;
+    background-color: #a1c1e4;
+    color: #1E3A8A;
+    border: #0056b3;
+    border-radius: 5px;
+}
+
+.interfaz{
+    min-width: 95%;
+    background-color: whitesmoke;
+    border-radius: 10px;
+    margin-top: 1rem;
+    display: grid;
+    grid-template-areas: 
+    "infoC"
+    "busqueda"
+    "clases";
+    grid-template-columns: auto;
+    grid-template-rows: 1fr 0.5fr 5fr;
+}
+
+.infoC{
+    grid-area: infoC;
+    display: grid;
+    grid-template-areas: "subBienvenida"    "estatus";
+    grid-template-columns: 3fr 1fr;
+    grid-template-rows: 100%;
+    background-color: #1E3A8A;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.Bienvenida{
+    padding-left: 2rem;
+    color: white;
+}
+
+#subBienvenida{
+    color: #98aaf8
+}

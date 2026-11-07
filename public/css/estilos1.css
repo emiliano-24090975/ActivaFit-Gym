@@ -1,0 +1,62 @@
+body{
+    background-image: url(../img/inicio1.svg);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    display: flex;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+}
+                                                   
+.cuadInfo{
+    display: grid;
+    grid-template-areas: 
+    "titulo"
+    "cuestionario"
+    "empezar";
+
+    grid-template-columns: 100%;
+    grid-template-rows: 0.8fr 1fr 0.5fr;
+
+    min-width: 400px;
+    max-width: 900px;
+    min-height: 200px;
+    max-height: 700px;
+
+    padding: 1rem;
+
+    background-color: rgb(255,255,255,0.75);
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.titulo{
+    grid-area: titulo;
+    text-align: center;
+    padding: 1rem;
+}
+
+.cuestionario{
+    grid-area: cuestionario;
+    padding: 1.5rem;
+
+    text-align: center;
+    align-items: center;
+    align-content: center;
+    justify-content: center;
+    justify-items: center;
+}
+
+.empezar{
+    grid-area: empezar;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    justify-items: center;
+}
+
+.Boton{
+    width: 5rem;
+    font-size: 1.5rem;
+}
