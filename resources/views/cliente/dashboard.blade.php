@@ -6,8 +6,22 @@
     <title>ActivaFit - Portal de Clientes</title>
     <link rel="stylesheet" href="{{ asset('css/estilos1.css') }}">
     <style>
-        body { background-color: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
-        .main-container { max-width: 1100px; margin: 0 auto; background: rgba(244, 246, 249, 0.98); padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        body { 
+            background-color: #1a1a1a; 
+            background-attachment: fixed;
+            background-size: cover;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 50px 20px; 
+        }
+        .main-container { 
+            max-width: 1100px; 
+            margin: 0 auto; 
+            background: rgba(244, 246, 249, 0.98); 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+        }
         .tab-btn { background: #e2e8f0; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer; }
         .tab-btn.active { background: #1a2b4c; color: white; }
 
@@ -30,6 +44,37 @@
             overflow: hidden;
             box-shadow: 0 3px 8px rgba(0,0,0,0.06);
             border: 1px solid #e2e8f0;
+        }
+
+        .form-control {
+            width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 14px;
+        }
+
+        /* Tabla con scroll interno mantenido */
+        .table-scroll-container {
+            max-height: 380px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        .table-scroll-container table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 13px;
+            text-align: left;
+        }
+        .table-scroll-container thead {
+            position: sticky;
+            top: 0;
+            background: #1a2b4c;
+            color: white;
+            z-index: 5;
+        }
+        .table-scroll-container th, .table-scroll-container td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
         }
     </style>
 </head>
@@ -72,13 +117,14 @@
         </div>
 
         <!-- Pestañas de Navegación -->
-        <div style="margin-top: 25px; display: flex; gap: 10px;">
+        <div style="margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap;">
             <button class="tab-btn active" onclick="cambiarPestana('catalogo', this)">📚 Catálogo de Clases</button>
             <button class="tab-btn" onclick="cambiarPestana('mis-clases', this)">🎟️ Mis Clases Inscritas</button>
+            <button class="tab-btn" onclick="cambiarPestana('asesorias', this)">📋 Mis Asesorías</button>
         </div>
 
         <!-- SECCIÓN 1: CATÁLOGO Y FILTROS -->
-        <div id="seccion-catalogo" style="margin-top: 20px;">
+        <div id="seccion-catalogo" class="seccion-panel" style="margin-top: 20px;">
             <form method="GET" action="{{ route('cliente.dashboard') }}" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border: 1px solid #e2e8f0;">
                 <h4 style="margin-top: 0; color: #ff7f00; font-size: 14px;">▼ FILTROS POR DISCIPLINA / APTITUD</h4>
                 <div style="display: flex; gap: 20px; flex-wrap: wrap;">
@@ -105,7 +151,6 @@
                 </div>
             </form>
 
-            <!-- Listado con Slider Horizontal -->
             <div style="margin-top: 25px;">
                 <h3 style="color: #1a2b4c; font-size: 18px; margin-bottom: 15px;">📅 Clases Disponibles (Desliza para ver más)</h3>
                 
@@ -150,7 +195,7 @@
         </div>
 
         <!-- SECCIÓN 2: MIS CLASES INSCRITAS -->
-        <div id="seccion-mis-clases" style="margin-top: 20px; display: none;">
+        <div id="seccion-mis-clases" class="seccion-panel" style="margin-top: 20px; display: none;">
             <h3 style="color: #1a2b4c; font-size: 18px;">🎟️ Historial de Mis Clases Reservadas</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(48%, 1fr)); gap: 20px; margin-top: 15px;">
                 @forelse($misInscripciones as $inscripcion)
@@ -164,7 +209,6 @@
                             <span style="display: inline-block; margin-top: 10px; background: #e6f4ea; color: #137333; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">Estado: {{ $inscripcion->estado }}</span>
                         </div>
                         
-                        <!-- Botón para darse de baja (Salir) -->
                         <div>
                             <form action="{{ route('cliente.cancelar') }}" method="POST">
                                 @csrf
@@ -179,16 +223,102 @@
             </div>
         </div>
 
+        <!-- SECCIÓN 3: MÓDULO DE ASESORÍAS (CLIENTE) -->
+        <div id="seccion-asesorias" class="seccion-panel" style="margin-top: 20px; display: none;">
+            <!-- Formulario de Agendar -->
+            <div style="background: white; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 3px 8px rgba(0,0,0,0.04);">
+                <h3 style="margin-top: 0; color: #1a2b4c; border-bottom: 2px solid #ff7f00; padding-bottom: 8px;">Solicitar Nueva Asesoría Personalizada</h3>
+                
+                <form action="{{ route('cliente.registrar_asesoria') }}" method="POST" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; margin-top: 15px;">
+                    @csrf
+                    <div style="flex: 1; min-width: 250px;">
+                        <label style="font-size: 12px; font-weight: bold; color: #4a5568;">SELECCIONAR INSTRUCTOR</label>
+                        <select name="id_Instructor" class="form-control" required style="background: white; margin-top: 4px;">
+                            <option value="">-- Elige un Instructor --</option>
+                            @foreach($instructores as $ins)
+                                <option value="{{ $ins->id_Instructor }}">{{ $ins->nombre }} ({{ $ins->especialidad }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="font-size: 12px; font-weight: bold; color: #4a5568;">FECHA Y HORA DE CITA</label>
+                        <input type="datetime-local" name="fecha_hora" class="form-control" required style="background: white; margin-top: 4px;">
+                    </div>
+
+                    <div>
+                        <button type="submit" style="background: #ff7f00; color: white; border: none; padding: 11px 22px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            📅 Agendar Asesoría
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista de Asesorías -->
+            <div style="background: white; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 3px 8px rgba(0,0,0,0.04); margin-top: 20px;">
+                <h3 style="margin-top: 0; color: #1a2b4c; border-bottom: 2px solid #ff7f00; padding-bottom: 8px;">Historial de Mis Asesorías</h3>
+
+                <div class="table-scroll-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID Asesoría</th>
+                                <th>Instructor Asignado</th>
+                                <th>Fecha y Hora</th>
+                                <th>Estado Actual</th>
+                                <th>Observaciones del Instructor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($asesorias as $asr)
+                                <tr>
+                                    <td style="font-weight: bold;">{{ $asr->id_Asesoria }}</td>
+                                    <td>{{ $asr->nombre_instructor }}</td>
+                                    <td>{{ $asr->fecha_hora }}</td>
+                                    <td>
+                                        @if($asr->estado == 'Realizada')
+                                            <span style="background: #e6f4ea; color: #137333; padding: 3px 8px; border-radius: 4px; font-weight: bold;">Realizada</span>
+                                        @elseif($asr->estado == 'Cancelada')
+                                            <span style="background: #fce8e6; color: #c5221f; padding: 3px 8px; border-radius: 4px; font-weight: bold;">Cancelada</span>
+                                        @else
+                                            <span style="background: #fef3c7; color: #b45309; padding: 3px 8px; border-radius: 4px; font-weight: bold;">Pendiente</span>
+                                        @endif
+                                    </td>
+                                    <td style="color: #4a5568; font-style: italic;">{{ $asr->observaciones }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" style="padding: 30px; text-align: center; color: #718096; font-weight: bold; font-size: 14px;">
+                                        📋 Aún no has agendado asesorías personalizadas.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        function cambiarPestana(seccion, boton) {
-            document.getElementById('seccion-catalogo').style.display = (seccion === 'catalogo') ? 'block' : 'none';
-            document.getElementById('seccion-mis-clases').style.display = (seccion === 'mis-clases') ? 'block' : 'none';
+        function cambiarPestana(seccionId, boton) {
+            document.querySelectorAll('.seccion-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+            document.getElementById('seccion-' + seccionId).style.display = 'block';
             
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            boton.classList.add('active');
+            if (boton) {
+                boton.classList.add('active');
+            }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var tabActiva = "{{ $tabActiva ?? 'catalogo' }}";
+            var btnTarget = document.querySelector(".tab-btn[onclick*='" + tabActiva + "']");
+            cambiarPestana(tabActiva, btnTarget);
+        });
     </script>
 </body>
 </html>

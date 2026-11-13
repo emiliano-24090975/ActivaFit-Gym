@@ -24,7 +24,7 @@ class ClienteController extends Controller
         // 1. Traducir la fecha seleccionada al día de la semana en español usando Carbon
         Carbon::setLocale('es');
         $carbonDate = Carbon::parse($fechaFiltro);
-        $diaSemanaSeleccionado = ucfirst($carbonDate->translatedFormat('l')); // Ej: Lunes, Martes, Miércoles, Jueves, Viernes, Sábado, Domingo
+        $diaSemanaSeleccionado = ucfirst($carbonDate->translatedFormat('l')); 
 
         // Consultamos la tabla 'clase' con el instructor
         $query = DB::connection('mysql')->table('clase')
@@ -44,7 +44,7 @@ class ClienteController extends Controller
         // 2. Filtrar dinámicamente según el rango de 'dias_semana' de la base de datos
         $clasesFiltradasPorFecha = [];
         foreach ($clasesCrudas as $c) {
-            $diasClase = trim($c->dias_semana); // Ej: "Lunes a Viernes", "Martes a Sábado", "Sábado a Domingo"
+            $diasClase = trim($c->dias_semana); 
             $coincideFecha = false;
 
             if (str_contains($diasClase, ' a ')) {
@@ -56,18 +56,15 @@ class ClienteController extends Controller
                 $numFin = $diasOrden[$diaFin] ?? 0;
 
                 if ($numInicio <= $numFin) {
-                    // Rango normal (ej. Lunes a Viernes -> 1 al 5)
                     if ($numDiaSeleccionado >= $numInicio && $numDiaSeleccionado <= $numFin) {
                         $coincideFecha = true;
                     }
                 } else {
-                    // Rango que cruza la semana (por si aplica)
                     if ($numDiaSeleccionado >= $numInicio || $numDiaSeleccionado <= $numFin) {
                         $coincideFecha = true;
                     }
                 }
             } else {
-                // Si es un día exacto o único
                 if (strcasecmp($diasClase, $diaSemanaSeleccionado) == 0) {
                     $coincideFecha = true;
                 }
@@ -78,7 +75,7 @@ class ClienteController extends Controller
             }
         }
 
-        // 3. Procesar cupos e inscripciones para las clases que pasaron el filtro de fecha
+        // 3. Procesar cupos e inscripciones para las clases filtradas
         $clases = [];
         foreach ($clasesFiltradasPorFecha as $c) {
             $inscritosCount = DB::connection('mysql')
@@ -111,7 +108,27 @@ class ClienteController extends Controller
             ->select('clase.*', 'instructor.nombre as nombre_instructor', 'Inscripcion_Clase.fecha_Reserva', 'Inscripcion_Clase.estado', 'Inscripcion_Clase.id_Reserva')
             ->get();
 
-        return view('cliente.dashboard', compact('cliente', 'clases', 'misInscripciones', 'disciplinaFiltro', 'fechaFiltro'));
+        // 4. MÓDULO DE ASESORÍAS (CLIENTE)
+        $asesorias = DB::connection('mysql')->table('Asesoria')
+            ->join('instructor', 'Asesoria.id_Instructor', '=', 'instructor.id_Instructor')
+            ->where('Asesoria.id_Cliente', $idCliente)
+            ->select('Asesoria.*', 'instructor.nombre as nombre_instructor')
+            ->orderBy('Asesoria.fecha_hora', 'desc')
+            ->get();
+
+        $instructores = DB::connection('mysql')->table('Instructor')->get();
+        $tabActiva = $request->input('tab_activa', 'catalogo');
+
+        return view('cliente.dashboard', compact(
+            'cliente', 
+            'clases', 
+            'misInscripciones', 
+            'disciplinaFiltro', 
+            'fechaFiltro', 
+            'asesorias', 
+            'instructores', 
+            'tabActiva'
+        ));
     }
 
     public function reservarClase(Request $request)
@@ -169,5 +186,62 @@ class ClienteController extends Controller
             ->update(['estado' => 'Cancelada']);
 
         return back()->with('success', 'Te has dado de baja de la clase exitosamente.');
+    }
+
+    // Registrar una nueva asesoría solicitada por el cliente
+    public function registrarAsesoria(Request $request)
+    {
+        $cliente = session('usuario_activo');
+        if (!$cliente) {
+            return redirect('/');
+        }
+        $cliente = (object) $cliente;
+        $idCliente = $cliente->id_Cliente ?? $cliente->id_cliente ?? $cliente->id ?? null;
+
+        $request->validate([
+            'id_Instructor' => 'required',
+            'fecha_hora' => 'required|date',
+        ]);
+
+        $fechaSeleccionada = Carbon::parse($request->input('fecha_hora'));
+        $idInstructor = $request->input('id_Instructor');
+
+        // 1. Verificación: No permitir asesorías en fechas u horas menores a la actual
+        if ($fechaSeleccionada->lt(Carbon::now())) {
+            return redirect()->route('cliente.dashboard', ['tab_activa' => 'asesorias'])
+                ->withErrors(['fecha' => 'No puedes agendar una asesoría en una fecha u hora pasada.']);
+        }
+
+        // 2. Verificación: Comprobar si el instructor está disponible en esa fecha y hora exacta
+        $fechaFormateada = $fechaSeleccionada->format('Y-m-d H:i:s');
+        
+        $instructorOcupado = DB::connection('mysql')->table('Asesoria')
+            ->where('id_Instructor', $idInstructor)
+            ->where('fecha_hora', $fechaFormateada)
+            ->where('estado', '!=', 'Cancelada')
+            ->exists();
+
+        if ($instructorOcupado) {
+            return redirect()->route('cliente.dashboard', ['tab_activa' => 'asesorias'])
+                ->withErrors(['disponibilidad' => 'El instructor ya tiene una asesoría agendada en este horario. Por favor, elige otra fecha u hora.']);
+        }
+
+        // Generar un ID único para la asesoría (ASR-XXXX)
+        $ultimoId = DB::connection('mysql')->table('Asesoria')->max('id_Asesoria');
+        $siguienteNumero = $ultimoId ? intval(substr($ultimoId, 4)) + 1 : 1;
+        $nuevoIdAsesoria = 'ASR-' . str_pad($siguienteNumero, 4, '0', STR_PAD_LEFT);
+
+        // Inserción del registro con valor predeterminado para el campo NOT NULL
+        DB::connection('mysql')->table('Asesoria')->insert([
+            'id_Asesoria' => $nuevoIdAsesoria,
+            'fecha_hora' => $fechaFormateada,
+            'estado' => 'Pendiente',
+            'observaciones' => 'Ingrese observacion', // Texto predeterminado requerido por la restricción NOT NULL
+            'id_Cliente' => $idCliente,
+            'id_Instructor' => $idInstructor,
+        ]);
+
+        return redirect()->route('cliente.dashboard', ['tab_activa' => 'asesorias'])
+            ->with('success', "¡Asesoría {$nuevoIdAsesoria} solicitada con éxito!");
     }
 }

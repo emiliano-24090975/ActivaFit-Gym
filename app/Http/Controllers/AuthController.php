@@ -57,11 +57,9 @@ class AuthController extends Controller
             } elseif ($tipo == 'Recepcionista') {
                 return redirect('/recepcion'); // Redirige al nuevo módulo de recepción
             } elseif ($tipo == 'Instructor') {
-                // Aquí pondrás la ruta del instructor más adelante
-                return redirect('/instructor-panel'); 
+                return redirect('/instructor');
             } elseif ($tipo == 'Admin') {
-                // Aquí pondrás la ruta del administrador más adelante
-                return redirect('/admin-panel');
+                return redirect('/admin');
             }
         } else {
             // Si el código no existe en la base de datos
